@@ -1,0 +1,660 @@
+#include "extendedcalculator.h"
+#include "ui_extendedcalculator.h"
+#include "QDebug"
+#include "QStringList"
+#include <QtWidgets>
+
+//构造函数
+ExtendedCalculator::ExtendedCalculator(QWidget *parent) :
+    QWidget(parent),
+    ui(new Ui::ExtendedCalculator)
+{
+    ui->setupUi(this);
+    //ui->setFixedSize(this->width(), this->height());   //禁止改变窗口大小
+    ui->tabWidget->setTabPosition(QTabWidget::North);   //设置选项卡位于上方（默认）
+    ui->tabWidget->setMovable(false);   //禁止选型卡移动
+
+
+    /* 标准选项卡 */
+    connect(ui->btn0,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号0与槽函数
+    connect(ui->btn1,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号1与槽函数
+    connect(ui->btn2,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号2与槽函数
+    connect(ui->btn3,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号3与槽函数
+    connect(ui->btn4,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号4与槽函数
+    connect(ui->btn5,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号5与槽函数
+    connect(ui->btn6,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号6与槽函数
+    connect(ui->btn7,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号7与槽函数
+    connect(ui->btn8,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号8与槽函数
+    connect(ui->btn9,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号9与槽函数
+    connect(ui->btnPoint,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号.与槽函数
+    connect(ui->btnAdd,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号+与槽函数
+    connect(ui->btnSub,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号-与槽函数
+    connect(ui->btnMulti,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号*与槽函数
+    connect(ui->btnDiv,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号/与槽函数
+   // connect(ui->btnSqrt,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号√与槽函数
+    connect(ui->btnPower,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号^与槽函数
+    connect(ui->btnLeftBracket,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号(与槽函数
+    connect(ui->btnRightBracket,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号)与槽函数
+    connect(ui->btnClear,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号C与槽函数
+    connect(ui->btnBack,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号<-与槽函数
+    connect(ui->btnEqual,SIGNAL(clicked()),this,SLOT(buttonClicked()));//信号=与槽函数
+
+    QPalette palette;
+    //palette.setColor(QPalette::Text,Qt::red);  //设置字体颜色
+    ui->lineInput->setFont(QFont("微软雅黑",10,QFont::Normal));//设置字体大小
+    ui->lineInput->setPalette(palette);
+    ui->lineResult->setFont(QFont("微软雅黑",10,QFont::Normal));//设置字体大小
+    ui->lineResult->setPalette(palette);
+
+
+
+
+
+    /* 复数选项卡 */
+    ui->lineReal1->setFocus();  //设置默认焦点
+    ui->btnc0->setFocusPolicy(Qt::NoFocus); //按钮失焦点，保证光标都在输入框内
+    ui->btnc1->setFocusPolicy(Qt::NoFocus);
+    ui->btnc2->setFocusPolicy(Qt::NoFocus);
+    ui->btnc3->setFocusPolicy(Qt::NoFocus);
+    ui->btnc4->setFocusPolicy(Qt::NoFocus);
+    ui->btnc5->setFocusPolicy(Qt::NoFocus);
+    ui->btnc6->setFocusPolicy(Qt::NoFocus);
+    ui->btnc7->setFocusPolicy(Qt::NoFocus);
+    ui->btnc8->setFocusPolicy(Qt::NoFocus);
+    ui->btnc9->setFocusPolicy(Qt::NoFocus);
+    ui->btncClear->setFocusPolicy(Qt::NoFocus);
+    ui->btncBack->setFocusPolicy(Qt::NoFocus);
+    ui->btncPoint->setFocusPolicy(Qt::NoFocus);
+    ui->btncNeg->setFocusPolicy(Qt::NoFocus);
+
+    inputc1="";
+    inputc2="";
+    inputc3="";
+    inputc4="";
+    complexResult="";
+
+}
+
+
+
+ExtendedCalculator::~ExtendedCalculator()
+{
+    delete ui;
+}
+
+/* 标准选项卡的函数 */
+bool pointflag = 1; //全局变量，控制每个数字只有一个小数点
+void ExtendedCalculator::buttonClicked()    //按钮触动的槽函数
+{
+    lineInput = ui->lineInput;
+    lineResult = ui->lineResult;
+    input = lineInput->text();  //获取输入框的内容，input用于修改显示框内容
+    QPushButton *pb = qobject_cast<QPushButton *>(sender());    //把输入的信号转化为按键的类型
+    QString text = pb->text();  //获取输入框内容，text用于读取一次输入内容
+
+    if(text==QString("C")) //清除（清空输入框所有内容）
+    {
+        input = "";
+        input_com = "";
+        lineInput->clear();
+        lineResult->clear();
+        pointflag = 1;
+    }
+    else if(text==QString("<-")) //退格（删除刚刚输入的字符）
+    {
+        if((input.right(1))[0]==QChar('.'))
+        {
+            pointflag = 1;
+        }
+        text = input.left(input.length()-1);
+        input_com = input_com.left(input.length()-1);
+        lineInput->setText(text);
+    }
+    else if(text == QString("+"))
+    {
+        if(input != ""&&((input.right(1))[0].isDigit()||(input.right(1))[0]==QChar(')')))  //如果输入框不为空并且最后一个字符是数字或者右括号则添加+
+        {
+            lineInput->setText(input+"+");
+            input_com += "+";
+            pointflag = 1;
+        }
+    }
+    else if(text == QString("-"))
+    {
+        if(input != ""&&((input.right(1))[0].isDigit()||(input.right(1))[0]==QChar('(')||(input.right(1))[0]==QChar(')')))  //负号前边可以是数字或者左右括号
+        {
+            lineInput->setText(input+"-");
+            input_com += "-";
+            pointflag = 1;
+        }
+    }
+    else if(text == QString("*"))
+    {
+        if(input != ""&&((input.right(1))[0].isDigit()||(input.right(1))[0]==QChar(')')))
+        {
+            lineInput->setText(input+"*");
+            input_com += "*";
+            pointflag = 1;
+        }
+    }
+    else if(text == QString("/"))
+    {
+        if(input != ""&&((input.right(1))[0].isDigit()||(input.right(1))[0]==QChar(')')))
+        {
+            lineInput->setText(input+"/");
+            input_com += "/";
+            pointflag = 1;
+        }
+    }
+    else if(text == QString("^"))
+    {
+        if(input != ""&&((input.right(1))[0].isDigit()||(input.right(1))[0]==QChar(')')))
+        {
+            lineInput->setText(input+"^");
+            input_com += "^";
+            pointflag = 1;
+        }
+    }
+    else if(text == QString("."))
+    {
+        if(input != ""&&(input.right(1))[0].isDigit()&&pointflag)  //输入框不为空且前一个字符是数字,同时要求这个数只有这一个小数点
+        {
+            lineInput->setText(input+".");
+            input_com += ".";
+            pointflag = 0;
+        }
+    }
+    /*else if(text == QString("√"))
+     {
+         if((input.right(1))[0].isDigit())  //前一个字符只能是数字
+         {
+            QString::iterator p = input.end();  //设置迭代器
+            int count = 0;  //记录遍历的数字个数
+            do{
+                p--;
+                count++;
+            }while(*p!=QChar('+')||*p!=QChar('-')||*p!=QChar('*')||*p!=QChar('/')||*p!=QChar('(')); //向前遍历直至遇到其他符号
+            double temp = input.right(count).toDouble();    //获取所得的数
+
+            input_com = input.left(input.length()-count).append(QString::number(sqrt(temp),10,6));   //对所得的数开平方并且追加到之前表达式中
+            lineInput->setText(QString("%1√%2").arg(input.left(input.length()-count)).arg(temp));  //按照书写方式显示
+         }
+     }*/
+    else if(text == QString("="))
+    {
+           std::string str=input_com.toStdString();//QString转化为String，注意将运算版本的input带入
+           const char *S=str.c_str();//整个输入框的字符串
+           char OPS[50];//中缀表达式
+           int len;//去掉括号之后中缀表达式的长度
+           double result;//计算结果
+           QString change;
+           bool flag1 = true;//判断输出是否为0的标志
+           Change(S,OPS,len);
+           EXchange(OPS,len,result,flag1);
+           if(flag1 == false)
+           {
+               lineInput->clear();
+               lineResult->clear();
+               QMessageBox::critical(0 , "注意" , "除数不能为0，请重新输入。",
+                                     QMessageBox::Ok | QMessageBox::Default, QMessageBox::Cancel | QMessageBox::Escape, 0 );
+           }
+           else
+           {
+               change=QString::number(result,10,6);//将计算结果转换为字符串，10进制，6位小数
+               lineResult->setText(change);
+           }
+    }
+    else    //0~9
+    {
+        lineInput->setText(input+=text);
+    }
+}
+
+void ExtendedCalculator::Change(const char *S,char OPS[],int &len)//将中缀表达式转变为后缀表达式
+{
+    QStack<char> OPE;//符号栈
+    unsigned int i,j=0;
+    unsigned int tmp = strlen(S);
+    for (i = 0; i < tmp; i++)
+    {
+        switch (S[i])
+        {
+        case'+':
+            if(OPE.isEmpty())//栈为空
+             OPE.push(S[i]);
+            else if (OPE.top() == '*' || OPE.top() == '/' || OPE.top() == '%' || OPE.top()=='^')
+            {
+                OPS[j++] = OPE.pop();//弹出比'+'运算符优先级高和相等的运算符，依次加入后缀表达式
+                i--;
+            }
+            else
+                OPE.push(S[i]);
+            break;
+        case'-':
+            if(i!=0 && '('!=S[i-1])//正数
+            {
+             if(OPE.isEmpty())//栈为空
+                  OPE.push(S[i]);
+              else if (OPE.top() == '*' || OPE.top() == '/'|| OPE.top() == '%' || OPE.top()=='^')//弹出比'-'运算符优先级高和相等的运算符，依次加入后缀表达式
+             {
+               OPS[j++] = OPE.pop();
+               i--;
+             }
+              else
+                OPE.push(S[i]);
+            }
+            else//负数
+            {
+                while ((S[i] >= '0'&&S[i] <= '9' ) || S[i] == '.' || ('-'==S[i]&&(S[i-1]<'0'||S[i-1]>'9')))
+                {
+                    OPS[j++] = S[i];
+                    if('-'==S[i])
+                      OPS[j++]='@';
+                    i++;
+                }
+                i--;
+                OPS[j++] = '#';  //数字中的间隔符
+            }
+            break;
+        case '^':
+                OPE.push(S[i]);
+            break;
+        case'*':
+            if(OPE.isEmpty())//栈为空
+               OPE.push(S[i]);
+            else if (OPE.top() == '^')
+            {
+                OPS[j++] = OPE.pop();//弹出比'/'运算符优先级高和相等的运算符，依次加入后缀表达式
+                i--;
+            }
+            else
+                OPE.push(S[i]);
+            break;
+        case'/':
+            if(OPE.isEmpty())//栈为空
+               OPE.push(S[i]);
+            else if (OPE.top() == '^')
+            {
+                OPS[j++] = OPE.pop();//弹出比'/'运算符优先级高和相等的运算符，依次加入后缀表达式
+                i--;
+            }
+            else
+                OPE.push(S[i]);
+            break;
+        case '%':
+            if(OPE.isEmpty())//栈为空
+               OPE.push(S[i]);
+            else if (OPE.top() == '^'|| OPE.top()=='*' || OPE.top()=='/')
+            {
+                OPS[j++] = OPE.pop();//弹出比'%'运算符优先级高和相等的运算符，依次加入后缀表达式
+                i--;
+            }
+            else
+                OPE.push(S[i]);
+            break;
+        case'(':
+            OPE.push(S[i]);
+            break;
+        case')':
+            while (OPE.top() != '(')//依次把栈中的运算符加入后缀表达式并将其出栈
+            {
+                OPS[j++] = OPE.pop();
+            }
+            OPE.pop();//从栈中弹出'('
+            break;
+        default:
+            while ((S[i] >= '0'&&S[i] <= '9') || S[i] == '.' || ('-'==S[i]&&S[i-1]<'0'&&S[i-1]>'9'))
+            {
+
+                OPS[j++] = S[i];
+
+                i++;
+            }
+            i--;
+            OPS[j++] = '#';  //数字中的间隔符
+            break;
+        }
+    }
+    while (!OPE.isEmpty())
+    {
+        OPS[j++] = OPE.pop();
+    }
+    len = j;
+}
+
+void ExtendedCalculator::EXchange(char B[], int len, double &result,bool &flag)//用后缀表达式计算结果
+{
+    int i;
+    double a;
+    double b;
+    double c;
+    QStack<double>SZ;
+    for (i = 0; i < len; i++)
+    {
+        switch (B[i])
+        {
+           case'^':
+          {
+            a = SZ.pop();
+            b = SZ.pop();
+            c = pow(b,a);
+            SZ.push(c);
+          }
+            break;
+           case'+':
+           {
+            a = SZ.pop();
+            b = SZ.pop();
+            c = b + a;
+            SZ.push(c);
+            }
+               break;
+           case'-':
+           {
+            if('@'!=B[i+1])
+            {
+            a = SZ.pop();
+            b = SZ.pop();
+            c = b - a;
+            SZ.push(c);
+            }
+            else
+            {
+                int jx = 0;
+                double dx;
+                char *stx = new char[10];
+                while (B[i] != '#')
+                {
+                   if('@'!=B[i])
+                    stx[jx++] = B[i];
+                    i++;
+
+                }
+                dx = atof(stx);//把字符串转换成浮点数
+                SZ.push(dx);
+                delete stx;
+            }
+           }
+               break;
+           case'*':
+           {
+            a = SZ.pop();
+            b = SZ.pop();
+            c = b*a;
+            SZ.push(c);
+           }
+               break;
+           case'/':
+           {
+              a = SZ.pop();
+              b = SZ.pop();
+              if (a == 0)
+              {
+                  flag = false;
+                  return;
+              }
+              c = b / a;
+              SZ.push(c);
+           }
+               break;
+           case'%':
+          {
+           a = SZ.pop();
+           b = SZ.pop();
+           if (a == 0)
+           {
+               flag = false;
+               return;
+           }
+           c = (int)b % (int)a;
+           SZ.push(c);
+          }
+            break;
+           default:
+               int j = 0;
+               double d;
+               char *st = new char[10];
+               while (B[i] != '#')
+               {
+                   st[j++] = B[i];
+                   i++;
+               }
+               d = atof(st);//把字符串转换成浮点数
+               SZ.push(d);
+               delete st;
+               break;
+        }
+    }
+    result=SZ.top();
+}
+
+
+/* 复数选项卡的函数 */
+void ExtendedCalculator::on_btnc0_clicked()
+{
+    QString str = "0";
+    setcText(str);
+}
+void ExtendedCalculator::on_btnc1_clicked()
+{
+    QString str = "1";
+    setcText(str);
+}
+void ExtendedCalculator::on_btnc2_clicked()
+{
+    QString str = "2";
+    setcText(str);
+}
+void ExtendedCalculator::on_btnc3_clicked()
+{
+    QString str = "3";
+    setcText(str);
+}
+void ExtendedCalculator::on_btnc4_clicked()
+{
+    QString str = "4";
+    setcText(str);
+}
+void ExtendedCalculator::on_btnc5_clicked()
+{
+    QString str = "5";
+    setcText(str);
+}
+void ExtendedCalculator::on_btnc6_clicked()
+{
+    QString str = "6";
+    setcText(str);
+}
+void ExtendedCalculator::on_btnc7_clicked()
+{
+    QString str = "7";
+    setcText(str);
+}
+void ExtendedCalculator::on_btnc8_clicked()
+{
+    QString str = "8";
+    setcText(str);
+}
+void ExtendedCalculator::on_btnc9_clicked()
+{
+    QString str = "9";
+    setcText(str);
+}
+void ExtendedCalculator::on_btncPoint_clicked()
+{
+    QString str = ".";
+    setcText(str);
+}
+void ExtendedCalculator::on_btncNeg_clicked()
+{
+    QString str = "-";
+    setcText(str);
+}
+void ExtendedCalculator::on_btncBack_clicked()
+{
+    if(ui->lineReal1->hasFocus())
+    {
+        inputc1 = inputc1.left(inputc1.length()-1);
+        ui->lineReal1->setText(inputc1);
+    }
+    else if(ui->lineImag1->hasFocus())
+    {
+        inputc2 = inputc2.left(inputc2.length()-1);
+        ui->lineImag1->setText(inputc2);
+    }
+    else if(ui->lineReal2->hasFocus())
+    {
+        inputc3 = inputc3.left(inputc3.length()-1);
+        ui->lineReal2->setText(inputc3);
+    }
+    else if(ui->lineImag2->hasFocus())
+    {
+        inputc4 = inputc4.left(inputc4.length()-1);
+        ui->lineImag2->setText(inputc4);
+    }
+}
+void ExtendedCalculator::on_btncClear_clicked()
+{
+    inputc1="";
+    inputc2="";
+    inputc3="";
+    inputc4="";
+    complexResult="";
+    ui->lineReal1->clear();
+    ui->lineImag1->clear();
+    ui->lineReal2->clear();
+    ui->lineImag2->clear();
+    ui->lineComplexResult->clear();
+}
+void ExtendedCalculator::on_btncEqual_clicked()
+{
+    inputc1=ui->lineReal1->text();
+    inputc2=ui->lineImag1->text();
+    inputc3=ui->lineReal2->text();
+    inputc4=ui->lineImag2->text();
+    real1 = inputc1.toFloat();  //如果含有不能转成float的字符，则返回0
+    imag1 = inputc2.toFloat();
+    real2 = inputc3.toFloat();
+    imag2 = inputc4.toFloat();
+    complexOper = (ui->comboBox->currentText().toStdString())[0];   //qstring转成标准string类型再获取第一个字符就是所选择的运算符
+    bool flag = checkInput(real1,imag1,real2,imag2,inputc1,inputc2,inputc3,inputc4);
+    if(!flag)
+    {
+        on_btncClear_clicked();
+    }
+    else
+    {
+        switch(complexOper)
+        {
+            case '+':
+            {
+                realres = real1 + real2;
+                imagres = imag1 + imag2;
+            }
+            break;
+            case '-':
+            {
+                realres = real1 - real2;
+                imagres = imag1 - imag2;
+            }
+            break;
+            case '*':
+            {
+                realres = real1*real2 - imag1*imag2;
+                imagres = imag1*real2 + real1*imag2;
+            }
+            break;
+            case '/':
+            {
+                if(real2*real2+imag2*imag2==0.0)
+                {
+                    QMessageBox::critical(0 , "注意" , "第二个复数不能为0，请重新输入。",
+                                          QMessageBox::Ok | QMessageBox::Default, QMessageBox::Cancel | QMessageBox::Escape, 0 );
+                    on_btncClear_clicked();
+                }
+                else
+                {
+                    realres = (real1*real2 + imag1*imag2)/(real2*real2+imag2*imag2);
+                    imagres = (imag1*real2 - real1*imag2)/(real2*real2+imag2*imag2);
+                }
+            }
+            break;
+        }
+        QPalette palette;
+        ui->lineComplexResult->setFont(QFont("微软雅黑",10,QFont::Normal));//设置字体大小
+        ui->lineComplexResult->setPalette(palette);
+        complexResult = QString("%1%2%3%4").arg(realres).arg("+").arg(imagres).arg("i");
+        ui->lineComplexResult->setText(complexResult);
+    }
+}
+void ExtendedCalculator::setcText(QString str)
+{
+    if(ui->lineReal1->hasFocus())
+    {
+        inputc1=ui->lineReal1->text();  //先获取目前输入框内的数字
+        inputc1.append(str);    //再进行按钮输入字符的操作，以免漏掉键盘输入的数字
+        ui->lineReal1->setText(inputc1);
+    }
+    else if(ui->lineImag1->hasFocus())
+    {
+        inputc2=ui->lineImag1->text();
+        inputc2.append(str);
+        ui->lineImag1->setText(inputc2);
+    }
+    else if(ui->lineReal2->hasFocus())
+    {
+        inputc3=ui->lineReal2->text();
+        inputc3.append(str);
+        ui->lineReal2->setText(inputc3);
+    }
+    else if(ui->lineImag2->hasFocus())
+    {
+        inputc4=ui->lineImag2->text();
+        inputc4.append(str);
+        ui->lineImag2->setText(inputc4);
+    }
+}
+bool ExtendedCalculator::checkInput(float real1, float imag1, float real2, float imag2,
+        QString inputc1,QString inputc2,QString inputc3,QString inputc4)
+{
+    //检测输入框是否为空
+    if(inputc1.isEmpty()||inputc2.isEmpty()||inputc3.isEmpty()||inputc4.isEmpty())
+    {
+        QMessageBox::critical(0 , "注意" , "复数的实部和虚部不能为空，请重新输入。",
+                              QMessageBox::Ok | QMessageBox::Default, QMessageBox::Cancel | QMessageBox::Escape, 0 );
+        on_btncClear_clicked();
+        return 0;
+    }
+    //检测原字符串是0还是存在非法字符
+    if((real1==0&&inputc1!="0")||(imag1==0&&inputc2!="0")||(real2==0&&inputc3!="0")||(imag2==0&&inputc4!="0"))
+    {
+        QMessageBox::critical(0 , "注意" , "输入内含有非数字字符，请重新输入。",
+                              QMessageBox::Ok | QMessageBox::Default, QMessageBox::Cancel | QMessageBox::Escape, 0 );
+        on_btncClear_clicked();
+        return 0;
+    }
+    return 1;
+}
+
+/*
+void ExtendedCalculator::buttoncClicked1()
+{
+    lineReal1= ui->lineReal1;
+    QRegExp wx("^-?(90|[1-8]?\\d(\\.\\d{1,4})?)$"); //正则表达式限制输入区间为-90到90之间的数
+    QRegExpValidator *latitude = new QRegExpValidator(wx, this);
+    ui->lineReal1->setValidator(latitude);
+    QString str1 = lineReal1->text();  //获取输入框的内容
+    real1 = str1.toFloat();
+    QPushButton *pbc1 = qobject_cast<QPushButton *>(sender());    //把输入的信号转化为按键的类型
+    QString textc1 = pbc1->text();  //获取输入框内容，text用于读取一次输入内容
+    if(textc1==QString("C")) //清除（清空输入框所有内容）
+    {
+        inputc1 = "";
+        lineReal1->setText(inputc1);
+    }
+    else
+    {
+        lineReal1->setText(inputc1+=textc1);
+    }
+}
+*/
